@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Account & Plans - PK AI Tool</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      overflow-y: auto;
+      display: block;
+      padding: 24px;
+    }
+    .panel-wrap {
+      max-width: 1000px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #333537;
+      padding-bottom: 14px;
+    }
+    .card {
+      background-color: #1e1f20;
+      border: 1px solid #333537;
+      border-radius: 14px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+    }
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .field label {
+      font-size: 13px;
+      color: #9aa0a6;
+    }
+    .field input,
+    .field select {
+      background-color: #282a2c;
+      border: 1px solid #444746;
+      color: #ffffff;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .pkg-card {
+      background-color: #282a2c;
+      border: 1px solid #3c4043;
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .pkg-title {
+      font-weight: 700;
+      color: #ffffff;
+    }
+    .pkg-price {
+      color: #8ab4f8;
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .btn-primary {
+      background-color: #8ab4f8;
+      color: #131314;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-secondary {
+      background-color: #282a2c;
+      color: #ffffff;
+      border: 1px solid #444746;
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .ad-slot {
+      background-color: #131314;
+      border: 1px dashed #444746;
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+      color: #9aa0a6;
+      font-size: 13px;
+    }
+    .status-note {
+      font-size: 13px;
+      color: #8ab4f8;
+    }
+  </style>
+</head>
+<body>
+  <div class="panel-wrap">
+    <div class="panel-header">
+      <h2>PK AI Tool — Account, Plans & Security</h2>
+      <a href="index.html" class="btn-secondary">Back to Workspace</a>
+    </div>
+
+    <div class="card">
+      <h3>Free Plan & Referral System</h3>
+      <p>Daily Free Allowance: <strong id="pointsCount">10</strong> / 10 Points</p>
+      <div class="grid-2">
+        <div class="field">
+          <label>Your Referral Link</label>
+          <input type="text" id="referralLink" value="https://pkaitool.com/ref/USER1001" readonly />
+        </div>
+        <div class="field">
+          <label>Social Links & Profile Handle</label>
+          <input type="text" id="socialHandle" placeholder="@username or social link" />
+        </div>
+      </div>
+      <div class="ad-slot" id="adSlot">
+        Ad Slot (Google AdSense / AdMob container — active when free points reach 0)
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Paid Packages (Crypto Wallet Payment Only)</h3>
+      <div class="field">
+        <label>Select Billing Cycle</label>
+        <select id="billingCycle">
+          <option value="monthly">Monthly Plans (6 Packages)</option>
+          <option value="yearly">Yearly Plans (6 Packages)</option>
+        </select>
+      </div>
+      <div class="grid-3" id="packagesGrid"></div>
+      <div class="grid-2">
+        <div class="field">
+          <label>Crypto Network (USDT / BTC / ETH)</label>
+          <select id="cryptoNetwork">
+            <option value="USDT-TRC20">USDT (TRC20)</option>
+            <option value="USDT-BEP20">USDT (BEP20)</option>
+            <option value="BTC">Bitcoin (BTC)</option>
+            <option value="ETH">Ethereum (ETH)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Official Crypto Deposit Wallet Address</label>
+          <input type="text" id="walletAddress" value="CONFIGURE_YOUR_CRYPTO_WALLET_IN_ENV" readonly />
+        </div>
+      </div>
+      <div class="field">
+        <label>Transaction Hash (TXID)</label>
+        <input type="text" id="txHash" placeholder="Paste crypto transaction hash after transfer" />
+      </div>
+      <button class="btn-primary" id="submitCryptoBtn">Submit Crypto Payment</button>
+      <div class="status-note" id="paymentStatus"></div>
+    </div>
+
+    <div class="card">
+      <h3>Blue Verified Badge (KYC) & Multi-Layer Security</h3>
+      <div class="grid-2">
+        <div class="field">
+          <label>Nationality / Country</label>
+          <input type="text" id="countryInput" placeholder="Enter your country" />
+        </div>
+        <div class="field">
+          <label>National ID Card / Passport Number</label>
+          <input type="text" id="idNumberInput" placeholder="Enter official ID number" />
+        </div>
+        <div class="field">
+          <label>Upload National ID Card (Front & Back)</label>
+          <input type="file" id="idFileInput" accept="image/*,.pdf" multiple />
+        </div>
+        <div class="field">
+          <label>Upload Face Verification Selfie</label>
+          <input type="file" id="faceFileInput" accept="image/*" />
+        </div>
+        <div class="field">
+          <label>App Lock PIN (4-6 Digits)</label>
+          <input type="password" id="appPinInput" maxlength="6" placeholder="Set App PIN" />
+        </div>
+        <div class="field">
+          <label>Google Authenticator (2FA Code)</label>
+          <input type="text" id="totpInput" maxlength="6" placeholder="6-digit authenticator code" />
+        </div>
+        <div class="field">
+          <label>Recovery Gmail</label>
+          <input type="email" id="recoveryEmail" placeholder="name@gmail.com" />
+        </div>
+        <div class="field">
+          <label>Recovery Phone Number (OTP)</label>
+          <input type="tel" id="recoveryPhone" placeholder="+1 234 567 8900" />
+        </div>
+      </div>
+      <button class="btn-primary" id="saveSecurityBtn">Save Verification & Security Settings</button>
+      <div class="status-note" id="securityStatus"></div>
+    </div>
+  </div>
+
+  <script>
+    const plansData = {
+      monthly: [
+        { name: "Starter Monthly", price: "10 USDT / mo", desc: "Basic tools & standard queue" },
+        { name: "Creator Monthly", price: "25 USDT / mo", desc: "Audio, image & social tools" },
+        { name: "Pro Monthly", price: "50 USDT / mo", desc: "Full workspace & priority speed" },
+        { name: "Studio Monthly", price: "100 USDT / mo", desc: "Media & multi-project tools" },
+        { name: "Agency Monthly", price: "250 USDT / mo", desc: "Team seats & client workflows" },
+        { name: "Enterprise Monthly", price: "500 USDT / mo", desc: "Dedicated throughput & full access" }
+      ],
+      yearly: [
+        { name: "Starter Yearly", price: "99 USDT / yr", desc: "Basic tools & standard queue" },
+        { name: "Creator Yearly", price: "249 USDT / yr", desc: "Audio, image & social tools" },
+        { name: "Pro Yearly", price: "499 USDT / yr", desc: "Full workspace & priority speed" },
+        { name: "Studio Yearly", price: "999 USDT / yr", desc: "Media & multi-project tools" },
+        { name: "Agency Yearly", price: "2499 USDT / yr", desc: "Team seats & client workflows" },
+        { name: "Enterprise Yearly", price: "4999 USDT / yr", desc: "Dedicated throughput & full access" }
+      ]
+    };
+
+    const billingCycle = document.getElementById("billingCycle");
+    const packagesGrid = document.getElementById("packagesGrid");
+    const submitCryptoBtn = document.getElementById("submitCryptoBtn");
+    const paymentStatus = document.getElementById("paymentStatus");
+    const saveSecurityBtn = document.getElementById("saveSecurityBtn");
+    const securityStatus = document.getElementById("securityStatus");
+
+    let selectedPlan = plansData.monthly[0].name;
+
+    function renderPackages(cycle) {
+      packagesGrid.innerHTML = "";
+      plansData[cycle].forEach((pkg) => {
+        const div = document.createElement("div");
+        div.className = "pkg-card";
+        div.innerHTML = `
+          <div class="pkg-title">${pkg.name}</div>
+          <div class="pkg-price">${pkg.price}</div>
+          <div style="font-size:12px;color:#9aa0a6;">${pkg.desc}</div>
+          <button class="btn-secondary" type="button">Select</button>
+        `;
+        div.querySelector("button").addEventListener("click", () => {
+          selectedPlan = pkg.name;
+          paymentStatus.textContent = `Selected Plan: ${selectedPlan}`;
+        });
+        packagesGrid.appendChild(div);
+      });
+    }
+
+    billingCycle.addEventListener("change", (e) => {
+      renderPackages(e.target.value);
+    });
+
+    submitCryptoBtn.addEventListener("click", () => {
+      const tx = document.getElementById("txHash").value.trim();
+      if (!tx) {
+        paymentStatus.textContent = "Please enter a valid crypto transaction hash.";
+        return;
+      }
+      paymentStatus.textContent = `Submitted ${selectedPlan} with TXID: ${tx}. Awaiting backend verification.`;
+    });
+
+    saveSecurityBtn.addEventListener("click", () => {
+      securityStatus.textContent = "KYC & security details saved locally. Connect backend endpoint to verify.";
+    });
+
+    renderPackages("monthly");
+  </script>
+</body>
+</html>
