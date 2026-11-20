@@ -1,6 +1,5 @@
 const express = require("express");
 const cors = require("cors");
-const path = require("path");
 require("dotenv").config();
 
 const {
@@ -18,9 +17,6 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json({ limit: "25mb" }));
 
-// Serve frontend files (index.html, account.html, style.css, etc.) from repo root
-app.use(express.static(__dirname));
-
 // Privacy & Identity Abstraction Middleware
 app.use((req, res, next) => {
   req.clientContext = {
@@ -31,11 +27,6 @@ app.use((req, res, next) => {
   };
   delete req.headers["x-forwarded-for"];
   next();
-});
-
-// Serve homepage explicitly
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
 });
 
 // Health, Engines & Database Status Endpoint
