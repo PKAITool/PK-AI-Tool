@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 require("dotenv").config();
 
 const {
@@ -16,6 +17,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json({ limit: "25mb" }));
+app.use(express.static(__dirname));
 
 // Privacy & Identity Abstraction Middleware
 app.use((req, res, next) => {
@@ -27,6 +29,11 @@ app.use((req, res, next) => {
   };
   delete req.headers["x-forwarded-for"];
   next();
+});
+
+// Serve Main Website Homepage
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
 // Health, Engines & Database Status Endpoint
@@ -68,7 +75,80 @@ app.get("/api/session/:sessionId", (req, res) => {
   });
 });
 
-// Master Hub / Tool Router Endpoint with Persistent Storage
+// Live AI Provider Caller using Configured Keys
+async function generateLiveReply(prompt, category) {
+  const systemPrompt = `You are PK AI Tool, a helpful master AI assistant. Current category: ${category}. Reply clearly in the same language the user used.`;
+
+  if (process.env.GROQ_API_KEY) {
+    const resp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.GROQ_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: prompt }
+        ]
+      })
+    });
+    const data = await resp.json();
+    if (data?.choices?.[0]?.message?.content) {
+      return { text: data.choices[0].message.content, provider: "Groq" };
+    }
+  }
+
+  if (process.env.OPENAI_API_KEY) {
+    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: prompt }
+        ]
+      })
+    });
+    const data = await resp.json();
+    if (data?.choices?.[0]?.message?.content) {
+      return { text: data.choices[0].message.content, provider: "OpenAI" };
+    }
+  }
+
+  if (process.env.OPENROUTER_API_KEY) {
+    const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "openai/gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: prompt }
+        ]
+      })
+    });
+    const data = await resp.json();
+    if (data?.choices?.[0]?.message?.content) {
+      return { text: data.choices[0].message.content, provider: "OpenRouter" };
+    }
+  }
+
+  return {
+    text: `PK AI Tool connected (${category}). Please verify API key quota/model permissions if live response was skipped.`,
+    provider: "Router-Fallback"
+  };
+}
+
+// Master Hub / Tool Router Endpoint with Live AI & Persistent Storage
 app.post("/api/route", async (req, res) => {
   try {
     const {
@@ -89,22 +169,13 @@ app.post("/api/route", async (req, res) => {
 
     const user = getOrCreateUser(userId);
 
-    let targetEngine = "TEXT_ROUTER_ENGINE";
-    if (["image", "photo", "thumbnail", "face-edit", "video", "edit", "reel"].includes(category.toLowerCase())) {
-      targetEngine = "MEDIA_REPLICATE_HF_ENGINE";
-    } else if (["audio", "music", "song", "voice", "tts"].includes(category.toLowerCase())) {
-      targetEngine = "VOICE_ELEVENLABS_NOIZ_ENGINE";
-    } else if (["app", "code", "software", "web"].includes(category.toLowerCase())) {
-      targetEngine = "CODE_BUILDER_ENGINE";
-    }
-
     if (prompt) {
       saveChatMessage(sessionId, "user", prompt, { category, language, attachmentsCount: attachments.length });
     }
 
-    const replyText = `Routed to ${targetEngine} for category "${category}". Connect live provider SDK/API calls on your dev server to return real generated output.`;
-    const savedBot = saveChatMessage(sessionId, "assistant", replyText, {
-      routedTo: targetEngine,
+    const aiResult = await generateLiveReply(prompt || "Attachment received", category);
+    const savedBot = saveChatMessage(sessionId, "assistant", aiResult.text, {
+      routedTo: aiResult.provider,
       category,
       language
     });
@@ -112,12 +183,12 @@ app.post("/api/route", async (req, res) => {
     return res.json({
       ok: true,
       router: "PK-AI-MASTER-HUB",
-      routedTo: targetEngine,
+      routedTo: aiResult.provider,
       category,
       language,
       userPlan: user.plan,
       dailyPoints: user.dailyPoints,
-      reply: replyText,
+      reply: aiResult.text,
       messageId: savedBot.id
     });
   } catch (err) {
