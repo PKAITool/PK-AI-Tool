@@ -19,7 +19,6 @@ app.use(cors());
 app.use(express.json({ limit: "25mb" }));
 app.use(express.static(__dirname));
 
-// Privacy & Identity Abstraction Middleware
 app.use((req, res, next) => {
   req.clientContext = {
     sessionId: req.headers["x-session-id"] || "default-session",
@@ -31,12 +30,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve Main Website Homepage
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// Health, Engines & Database Status Endpoint
 app.get("/api/health", (req, res) => {
   const enginesConfigured = {
     groq: Boolean(process.env.GROQ_API_KEY),
@@ -61,7 +58,6 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Get User & Chat History Endpoint
 app.get("/api/session/:sessionId", (req, res) => {
   const { sessionId } = req.params;
   const user = getOrCreateUser(req.clientContext.userId);
@@ -75,80 +71,149 @@ app.get("/api/session/:sessionId", (req, res) => {
   });
 });
 
-// Live AI Provider Caller using Configured Keys
 async function generateLiveReply(prompt, category) {
   const systemPrompt = `You are PK AI Tool, a helpful master AI assistant. Current category: ${category}. Reply clearly in the same language the user used.`;
+  const errors = [];
 
+  // 1. Try Groq
   if (process.env.GROQ_API_KEY) {
-    const resp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: prompt }
-        ]
-      })
-    });
-    const data = await resp.json();
-    if (data?.choices?.[0]?.message?.content) {
-      return { text: data.choices[0].message.content, provider: "Groq" };
+    try {
+      const resp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.GROQ_API_KEY.trim()}`
+        },
+        body: JSON.stringify({
+          model: "llama-3.1-8b-instant",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: prompt }
+          ]
+        })
+      });
+      const data = await resp.json();
+      if (data?.choices?.[0]?.message?.content) {
+        return { text: data.choices[0].message.content, provider: "Groq" };
+      }
+      errors.push(`Groq: ${data?.error?.message || resp.status}`);
+    } catch (e) {
+      errors.push(`Groq: ${e.message}`);
     }
   }
 
-  if (process.env.OPENAI_API_KEY) {
-    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: prompt }
-        ]
-      })
-    });
-    const data = await resp.json();
-    if (data?.choices?.[0]?.message?.content) {
-      return { text: data.choices[0].message.content, provider: "OpenAI" };
+  // 2. Try Google AI Studio (Gemini)
+  if (process.env.GOOGLE_AI_STUDIO_API_KEY) {
+    try {
+      const key = process.env.GOOGLE_AI_STUDIO_API_KEY.trim();
+      const resp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: `${systemPrompt}\n\nUser: ${prompt}` }] }]
+          })
+        }
+      );
+      const data = await resp.json();
+      const replyText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (replyText) {
+        return { text: replyText, provider: "Google-Gemini" };
+      }
+      errors.push(`Gemini: ${data?.error?.message || resp.status}`);
+    } catch (e) {
+      errors.push(`Gemini: ${e.message}`);
     }
   }
 
+  // 3. Try OpenRouter
   if (process.env.OPENROUTER_API_KEY) {
-    const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: "openai/gpt-4o-mini",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: prompt }
-        ]
-      })
-    });
-    const data = await resp.json();
-    if (data?.choices?.[0]?.message?.content) {
-      return { text: data.choices[0].message.content, provider: "OpenRouter" };
+    try {
+      const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY.trim()}`
+        },
+        body: JSON.stringify({
+          model: "meta-llama/llama-3.1-8b-instruct:free",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: prompt }
+          ]
+        })
+      });
+      const data = await resp.json();
+      if (data?.choices?.[0]?.message?.content) {
+        return { text: data.choices[0].message.content, provider: "OpenRouter" };
+      }
+      errors.push(`OpenRouter: ${data?.error?.message || resp.status}`);
+    } catch (e) {
+      errors.push(`OpenRouter: ${e.message}`);
+    }
+  }
+
+  // 4. Try OpenAI
+  if (process.env.OPENAI_API_KEY) {
+    try {
+      const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY.trim()}`
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: prompt }
+          ]
+        })
+      });
+      const data = await resp.json();
+      if (data?.choices?.[0]?.message?.content) {
+        return { text: data.choices[0].message.content, provider: "OpenAI" };
+      }
+      errors.push(`OpenAI: ${data?.error?.message || resp.status}`);
+    } catch (e) {
+      errors.push(`OpenAI: ${e.message}`);
+    }
+  }
+
+  // 5. Try DeepSeek
+  if (process.env.DEEPSEEK_API_KEY) {
+    try {
+      const resp = await fetch("https://api.deepseek.com/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY.trim()}`
+        },
+        body: JSON.stringify({
+          model: "deepseek-chat",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: prompt }
+          ]
+        })
+      });
+      const data = await resp.json();
+      if (data?.choices?.[0]?.message?.content) {
+        return { text: data.choices[0].message.content, provider: "DeepSeek" };
+      }
+      errors.push(`DeepSeek: ${data?.error?.message || resp.status}`);
+    } catch (e) {
+      errors.push(`DeepSeek: ${e.message}`);
     }
   }
 
   return {
-    text: `PK AI Tool connected (${category}). Please verify API key quota/model permissions if live response was skipped.`,
-    provider: "Router-Fallback"
+    text: `Live AI engines returned errors -> ${errors.join(" | ")}`,
+    provider: "Diagnostics"
   };
 }
 
-// Master Hub / Tool Router Endpoint with Live AI & Persistent Storage
 app.post("/api/route", async (req, res) => {
   try {
     const {
@@ -200,7 +265,6 @@ app.post("/api/route", async (req, res) => {
   }
 });
 
-// Crypto Payment Verification Intake Endpoint
 app.post("/api/payments/crypto", (req, res) => {
   const { planName, network, txHash, userId = "guest-user" } = req.body;
   if (!planName || !network || !txHash) {
@@ -218,7 +282,6 @@ app.post("/api/payments/crypto", (req, res) => {
   });
 });
 
-// KYC & Security Settings Endpoint
 app.post("/api/security/kyc", (req, res) => {
   const { country, idNumber, hasTwoFactor, hasAppPin, userId = "guest-user" } = req.body;
   if (!country || !idNumber) {
