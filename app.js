@@ -29,7 +29,12 @@ function renderMessage(role, text, meta = {}) {
   item.dataset.category = meta.category || state.category;
   item.textContent = `${role === "user" ? "You" : "PK AI"}: ${text}`;
   container.appendChild(item);
-  container.scrollTop = container.scrollHeight;
+
+  if (container === document.body) {
+    window.scrollTo(0, document.body.scrollHeight);
+  } else {
+    container.scrollTop = container.scrollHeight;
+  }
 }
 
 function updateUserStatusUI(user) {
@@ -105,7 +110,8 @@ async function sendPromptToRouter(promptText, options = {}) {
       updateUserStatusUI({ plan: data.userPlan, dailyPoints: data.dailyPoints });
     }
 
-    renderMessage("assistant", data.reply, {
+    const replyText = data.reply || "Response received.";
+    renderMessage("assistant", replyText, {
       category: data.category,
       routedTo: data.routedTo
     });
