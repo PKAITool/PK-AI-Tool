@@ -3,78 +3,62 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PK AI Tool</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>PK AI Tool - Master Hub</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: #0b0f19; color: #f1f5f9; display: flex; flex-direction: column; height: 100vh; }
+    header { background: #111827; padding: 14px 18px; border-bottom: 1px solid #1f2937; display: flex; justify-content: space-between; align-items: center; }
+    .brand { font-size: 1.2rem; font-weight: 700; color: #38bdf8; }
+    .badges { display: flex; gap: 8px; font-size: 0.8rem; }
+    .badge { background: #1e293b; padding: 5px 10px; border-radius: 20px; border: 1px solid #334155; }
+    .categories { display: flex; gap: 8px; padding: 10px 16px; background: #0f172a; overflow-x: auto; border-bottom: 1px solid #1e293b; }
+    .cat-btn { background: #1e293b; color: #cbd5e1; border: 1px solid #334155; padding: 7px 14px; border-radius: 20px; cursor: pointer; white-space: nowrap; font-size: 0.85rem; }
+    .cat-btn.active, .cat-btn:hover { background: #0284c7; color: #fff; border-color: #38bdf8; }
+    #chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .chat-message { max-width: 85%; padding: 12px 15px; border-radius: 14px; line-height: 1.5; font-size: 0.95rem; white-space: pre-wrap; word-wrap: break-word; }
+    .chat-message--user { align-self: flex-end; background: #0284c7; color: #fff; border-bottom-right-radius: 4px; }
+    .chat-message--assistant { align-self: flex-start; background: #1e293b; color: #e2e8f0; border: 1px solid #334155; border-bottom-left-radius: 4px; }
+    #chat-form { display: flex; gap: 10px; padding: 12px 16px; background: #111827; border-top: 1px solid #1f2937; }
+    #prompt-input { flex: 1; background: #1e293b; color: #fff; border: 1px solid #334155; border-radius: 12px; padding: 12px; font-size: 1rem; outline: none; }
+    #prompt-input:focus { border-color: #38bdf8; }
+    button[type="submit"] { background: #0284c7; color: #fff; border: none; border-radius: 12px; padding: 0 20px; font-weight: 600; cursor: pointer; font-size: 0.95rem; }
+    button[type="submit"]:hover { background: #0369a1; }
+  </style>
 </head>
 <body>
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-top">
-      <div class="brand">
-        <span class="brand-dot"></span>
-        <span>PK AI Tool</span>
-      </div>
-      <button class="new-chat-btn" id="newChatBtn" data-i18n="newChat">+ New Chat</button>
-
-      <div class="section-title" data-i18n="recentChats">Recent Chats</div>
-      <ul class="nav-list" id="historyList">
-        <li class="nav-item active" data-i18n="defaultWorkspace">Main Workspace</li>
-      </ul>
+  <header>
+    <div class="brand">PK AI Tool</div>
+    <div class="badges">
+      <div class="badge">Plan: <strong id="user-plan-display">free</strong></div>
+      <div class="badge">Points: <strong id="daily-points-display">10</strong></div>
     </div>
+  </header>
 
-    <div class="sidebar-footer">
-      <div class="lang-box">
-        <label for="languageSelect" class="section-title" data-i18n="languageLabel">Language</label>
-        <select id="languageSelect" class="lang-select">
-          <option value="auto">Auto Detect (System)</option>
-          <option value="en">English</option>
-          <option value="ur">Urdu</option>
-          <option value="hi">Hindi</option>
-          <option value="ar">Arabic</option>
-          <option value="es">Spanish</option>
-          <option value="fr">French</option>
-          <option value="zh">Chinese</option>
-        </select>
-      </div>
-      <div class="nav-item" id="guidesBtn" data-i18n="guides">Guides & Help</div>
-      <div class="nav-item" id="settingsBtn" data-i18n="settings">Account Settings</div>
-    </div>
-  </aside>
+  <div class="categories">
+    <button class="cat-btn active" data-category="general">All / Chat</button>
+    <button class="cat-btn" data-category="image">Image / Photo</button>
+    <button class="cat-btn" data-category="audio">Voice / Audio</button>
+    <button class="cat-btn" data-category="video">Video / Reel</button>
+    <button class="cat-btn" data-category="code">App / Code</button>
+  </div>
 
-  <main class="main-area">
-    <header class="top-bar">
-      <div class="top-left">
-        <button class="menu-btn" id="toggleMenuBtn">Menu</button>
-        <span class="top-title">PK AI Tool</span>
-      </div>
-      <div class="top-right">
-        <span class="plan-badge" id="planBadge">Free Plan • 10 Points</span>
-      </div>
-    </header>
+  <div id="chat-messages">
+    <div class="chat-message chat-message--assistant">PK AI: Assalam-o-Alaikum! PK AI Tool ready hai. Apna sawal ya kaam neeche likhein.</div>
+  </div>
 
-    <section class="chat-container" id="chatContainer">
-      <div class="welcome-card" id="welcomeCard">
-        <h1 data-i18n="welcomeTitle">Welcome to PK AI Tool</h1>
-        <p data-i18n="welcomeSubtitle">Universal AI workspace supporting global languages, media, and tools.</p>
-      </div>
-    </section>
+  <form id="chat-form">
+    <input type="text" id="prompt-input" placeholder="Yahan apna message ya prompt likhein..." required />
+    <button type="submit">Send</button>
+  </form>
 
-    <div class="input-wrapper">
-      <div class="input-box">
-        <input type="file" id="fileInput" hidden multiple />
-        <button class="icon-btn" id="plusBtn" title="Attach Files">+</button>
-        <input
-          type="text"
-          class="prompt-input"
-          id="promptInput"
-          data-i18n-placeholder="inputPlaceholder"
-          placeholder="Ask anything in any language..."
-        />
-        <button class="icon-btn" id="micBtn" title="Voice Input">Mic</button>
-        <button class="send-btn" id="sendBtn" data-i18n="send">Send</button>
-      </div>
-    </div>
-  </main>
-
-  <script src="app.js"></script>
+  <script>
+    document.querySelectorAll(".cat-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".cat-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+      });
+    });
+  </script>
+  <script src="/app.js"></script>
 </body>
 </html>
